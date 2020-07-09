@@ -25,15 +25,27 @@ if ~any(~(size(lat_main)==size(lat_input)))
         disp('Resampling is not required.')
         VAR_r=VAR;
     else
-        VAR_r=resample_mean(lat_main, lon_main, lat_input, lon_input, VAR, method);
+        nan_frame=nan(size(lat_main,1), size(lat_main,2));
+        VAR_r=nan_frame;
+        
+        valid_data=(~isnan((VAR)) & lat_input<=max(lat_main(:,1)) & lat_input>min(lat_main(:,1)) & lon_input<max(lon_main(1,:)) & lon_input>=min(lon_main(1,:)));
+        valid_value=VAR(valid_data);
+        t_lat=lat_input(valid_data);
+        t_lon=lon_input(valid_data);
+        
+        t_lat_index=interp1(lat_main(:,1), 1:size(lat_main,1), t_lat,method);
+        t_lon_index=interp1(lon_main(1,:), 1:size(lon_main,2), t_lon,method);
+        index_array=sub2ind(size(lat_main), t_lat_index, t_lon_index);
+        
+        nan_valid=isnan(sum([t_lat_index, t_lon_index],2));
+        valid_value(nan_valid)=[]; %t_lat_index(nan_valid)=[];t_lon_index(nan_valid)=[];
+                
+        [C,~,idx]=unique(index_array, 'stable');
+        val = accumarray(idx,valid_value,[],@mean);   
+        VAR_r(C)=val;
     end
 else
     
-    VAR_r=resample_mean(lat_main, lon_main, lat_input, lon_input, VAR, method);
-    
-end
-
-function VAR_r=resample_mean(lat_main, lon_main, lat_input, lon_input, VAR, method)
     nan_frame=nan(size(lat_main,1), size(lat_main,2));
     VAR_r=nan_frame;
     
@@ -52,3 +64,6 @@ function VAR_r=resample_mean(lat_main, lon_main, lat_input, lon_input, VAR, meth
     [C,~,idx]=unique(index_array, 'stable');
     val = accumarray(idx,valid_value,[],@mean);    
     VAR_r(C)=val;
+end
+
+function resample_mean(lat_main(lat_main, lon_main, lat_input, lon_input, VAR, method)
